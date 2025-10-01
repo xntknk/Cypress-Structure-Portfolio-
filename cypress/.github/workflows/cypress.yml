@@ -1,9 +1,13 @@
 name: Cypress Tests
 
 on:
-  push:          # Trigger เมื่อมีการ push
+  push:
     branches:
-      - main     # ระบุ branch ที่ต้องการ เช่น main, dev, staging
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   cypress-run:
@@ -18,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 18   # กำหนดเวอร์ชัน Node.js ที่ใช้
+          node-version: 18 # กำหนดเวอร์ชัน Node.js ที่ใช้
 
       # 3. Cache Cypress binary (ช่วยให้รันเร็วขึ้น)
       - name: Cache Cypress binary
@@ -30,7 +34,7 @@ jobs:
 
       # 4. ติดตั้ง dependencies
       - name: Install dependencies
-        run: npm ci   # ใช้ npm ci เพื่อความเสถียร
+        run: npm ci # ใช้ npm ci เพื่อความเสถียร
 
       # 5. ติดตั้ง Cypress binary (ถ้า cache ไม่มี)
       - name: Install Cypress
