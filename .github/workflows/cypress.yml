@@ -1,45 +1,72 @@
-name: Cypress Tests
+name: Cypress CI (Fast)
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ main, dev, staging ]
 
 jobs:
-  cypress-run:
+  e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 15            # กันงานค้างเป็นชั่วโมง
+
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev]                 # เติม staging ได้: [dev, staging]
+    env:
+      CI: "1"                      # บอก Cypress ว่าอยู่ใน CI (ไม่เปิด UI)
+      ENV: ${{ matrix.env }}       # ส่งต่อให้ config ของคุณเลือก baseUrl เอง
+      # หากเว็บคุณมี Basic Auth / token ให้ใส่เป็น Secrets แล้ว mapping มาเป็น env ตรงนี้
 
     steps:
-      # 1. Checkout code จาก repo
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # 2. ติดตั้ง Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: 18 # กำหนดเวอร์ชัน Node.js ที่ใช้
+          node-version: 18
+          cache: npm
 
-      # 3. Cache Cypress binary (ช่วยให้รันเร็วขึ้น)
       - name: Cache Cypress binary
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/Cypress
           key: ${{ runner.os }}-cypress-${{ hashFiles('**/package-lock.json') }}
           restore-keys: ${{ runner.os }}-cypress-
 
-      # 4. ติดตั้ง dependencies
-      - name: Install dependencies
-        run: npm ci # ใช้ npm ci เพื่อความเสถียร
+      - name: Install deps
+        run: npm ci
 
-      # 5. ติดตั้ง Cypress binary (ถ้า cache ไม่มี)
-      - name: Install Cypress
-        run: npx cypress install
+      - name: Verify Cypress
+        run: npx cypress verify
 
-      # 6. รัน Cypress test
-      - name: Run Cypress tests
-        run: npx cypress run
+      # (ถ้าเว็บต้อง start เอง ให้ใช้ start-server-and-test)
+      # - name: Start app and test
+      #   run: npx start-server-and-test "npm run start" http://localhost:3000 "npx cypress run --headless --browser electron"
+
+      - name: Run Cypress (headless, fast)
+        run: |
+          npx cypress run \
+            --headless \
+            --browser electron \
+            --config "video=false,retries=1,pageLoadTimeout=60000,defaultCommandTimeout=8000,watchForFileChanges=false" \
+            --reporter dot
+        # ถ้าอยากให้รันเฉพาะไฟล์ควันหลง (smoke) ใส่ --spec "cypress/e2e/**/smoke*.cy.*"
+
+      # เปิดไว้สำหรับดีบักเมื่อมี fail (เก็บไฟล์ artifacts)
+      - name: Upload screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Upload videos
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          if-no-files-found: ignore
