@@ -10,15 +10,13 @@ jobs:
     timeout-minutes: 20
     env:
       CI: "1"
-      ENV: dev
-      NODE_OPTIONS: ""          # ✅ ล้าง option เก่าๆ ออก
 
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: npm
 
       - name: Cache Cypress binary
@@ -31,8 +29,10 @@ jobs:
       - run: npm ci
       - run: npx cypress verify
 
-      - name: Run Cypress (headless)
-        run: npx cypress run --headless --browser electron --config "video=false,retries=1,pageLoadTimeout=60000,defaultCommandTimeout=8000"
+      - name: Run Cypress (Chrome headless, force clear NODE_OPTIONS)
+        run: |
+          NODE_OPTIONS= npx cypress run --headless --browser chrome \
+            --config "video=false,retries=1,pageLoadTimeout=60000,defaultCommandTimeout=8000"
 
       - name: Upload screenshots
         if: failure()
