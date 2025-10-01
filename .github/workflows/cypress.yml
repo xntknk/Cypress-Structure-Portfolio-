@@ -1,4 +1,4 @@
-name: Cypress CI (Fast)
+name: Cypress CI
 
 on:
   push:
@@ -7,23 +7,16 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15            # กันงานค้างเป็นชั่วโมง
-
-    strategy:
-      fail-fast: false
-      matrix:
-        env: [dev]                 # เติม staging ได้: [dev, staging]
+    timeout-minutes: 20
     env:
-      CI: "1"                      # บอก Cypress ว่าอยู่ใน CI (ไม่เปิด UI)
-      ENV: ${{ matrix.env }}       # ส่งต่อให้ config ของคุณเลือก baseUrl เอง
-      # หากเว็บคุณมี Basic Auth / token ให้ใส่เป็น Secrets แล้ว mapping มาเป็น env ตรงนี้
+      CI: "1"
+      ENV: dev
+      NODE_OPTIONS: ""          # ✅ ล้าง option เก่าๆ ออก
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: npm
@@ -35,26 +28,12 @@ jobs:
           key: ${{ runner.os }}-cypress-${{ hashFiles('**/package-lock.json') }}
           restore-keys: ${{ runner.os }}-cypress-
 
-      - name: Install deps
-        run: npm ci
+      - run: npm ci
+      - run: npx cypress verify
 
-      - name: Verify Cypress
-        run: npx cypress verify
+      - name: Run Cypress (headless)
+        run: npx cypress run --headless --browser electron --config "video=false,retries=1,pageLoadTimeout=60000,defaultCommandTimeout=8000"
 
-      # (ถ้าเว็บต้อง start เอง ให้ใช้ start-server-and-test)
-      # - name: Start app and test
-      #   run: npx start-server-and-test "npm run start" http://localhost:3000 "npx cypress run --headless --browser electron"
-
-      - name: Run Cypress (headless, fast)
-        run: |
-          npx cypress run \
-            --headless \
-            --browser electron \
-            --config "video=false,retries=1,pageLoadTimeout=60000,defaultCommandTimeout=8000,watchForFileChanges=false" \
-            --reporter dot
-        # ถ้าอยากให้รันเฉพาะไฟล์ควันหลง (smoke) ใส่ --spec "cypress/e2e/**/smoke*.cy.*"
-
-      # เปิดไว้สำหรับดีบักเมื่อมี fail (เก็บไฟล์ artifacts)
       - name: Upload screenshots
         if: failure()
         uses: actions/upload-artifact@v4
