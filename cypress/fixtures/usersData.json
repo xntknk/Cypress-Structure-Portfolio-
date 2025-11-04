@@ -2,6 +2,7 @@
     "userInfo" : {
         "firstName" : "Nattakit",
         "middleName" : "X",
-        "lastName" : "Naikon"
+        "lastName" : "Naikon",
+        "updateFname" : "Testedit"
     }
 }

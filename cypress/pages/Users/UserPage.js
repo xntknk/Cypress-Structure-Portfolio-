@@ -1,50 +1,89 @@
 class UserPage {
+  selectors = {
+    addbutton: ".orangehrm-header-container > .oxd-button",
+    firstName: 'input[name="firstName"]',
+    middleName: 'input[name="middleName"]',
+    lastName: 'input[name="lastName"]',
+    switch: 'input[type="checkbox"]',
+    saveButton: 'button[type="submit"]',
+  };
+  goto() {
+    cy.visit("/pim/viewEmployeeList");
+  }
+  //Create
+  clickAddBtn() {
+    cy.get(this.selectors.addbutton).click();
+  }
+  assertBtn() {
+    cy.url().should("include", "/addEmployee");
+  }
 
-    selectors = {
-        addbutton : '.orangehrm-header-container > .oxd-button',
-        firstName : 'input[name="firstName"]',
-        middleName : 'input[name="middleName"]',
-        lastName : 'input[name="lastName"]',
-        switch : 'input[type="checkbox"]',
-        saveButton : 'button[type="submit"]'
+  fillFname(fName) {
+    cy.get(this.selectors.firstName).clear();
+    cy.get(this.selectors.firstName).type(fName);
+  }
 
-    }
-    goto() {
-        cy.visit('/pim/viewEmployeeList');
-    }
+  fillMname(mName) {
+    cy.get(this.selectors.middleName).clear();
+    cy.get(this.selectors.middleName).type(mName);
+  }
 
-    clickAddBtn(){
-        cy.get(this.selectors.addbutton).click()
+  fillLname(lName) {
+    cy.get(this.selectors.lastName).clear();
+    cy.get(this.selectors.lastName).type(lName);
+  }
 
-    }
-    assertBtn(){
-        cy.url().should("include", "/addEmployee");
-    }
+  clickSaveBtn() {
+    cy.get(this.selectors.saveButton).eq(0).click();
+    cy.get(".oxd-text--toast-title").should("have.text", "Success");
+  }
 
-    fillFname(fName){
-        cy.get(this.selectors.firstName).clear();
-        cy.get(this.selectors.firstName).type(fName);
-    }
+  createUser(fName, mName, lName) {
+    this.fillFname(fName);
+    this.fillMname(mName);
+    this.fillLname(lName);
+    this.clickSaveBtn();
+  }
 
-    fillMname(mName){
-        cy.get(this.selectors.middleName).clear();
-        cy.get(this.selectors.middleName).type(mName);
-    }
+  //Edit
+  selectUser() {
+    cy.get(".oxd-table-row.oxd-table-row--with-border.oxd-table-row--clickable")
+      .eq(0) //click at the first element because first element = latest created user
+      .click();
+    cy.wait(3000);
+    cy.url().should("include", "/viewPersonalDetails");
+    cy.get('input[name="firstName"]')
+      .invoke("val")
+      .then((firstNameValue) => {
+        cy.get("h6.oxd-text.oxd-text--h6.--strong")
+          .should("be.visible")
+          .invoke("text")
+          .then((fullNameText) => {
+            expect(fullNameText).to.include(firstNameValue);
+          });
+      });
+  }
 
-    fillLname(lName){
-        cy.get(this.selectors.lastName).clear();
-        cy.get(this.selectors.lastName).type(lName);
-    }
+  //   verifyUpdate(updateName){
+  //     cy.get(".oxd-table-row.oxd-table-row--with-border.oxd-table-row--clickable")
+  //       .eq(0)
+  //       .invoke("text")
+  //       .should("include", updateName)
 
-    clickSaveBtn(){
-        cy.get(this.selectors.saveButton).click();
-    }
+  //   }
 
-    createUser(fName,mName,lName){
-        this.fillFname(fName);
-        this.fillMname(mName);
-        this.fillLname(lName);
-        this.clickSaveBtn();
-    }
+  //Delete
+  clickDelBtn() {
+    cy.get('[class="oxd-icon-button oxd-table-cell-action-space"]:nth-child(2)')
+      .eq(0)
+      .click();
+  }
 
-} export default new UserPage();
+  confirmDelete(){
+    cy.get('[class="oxd-button oxd-button--medium oxd-button--label-danger orangehrm-button-margin"]')
+    .click();
+    cy.get(".oxd-text--toast-title").should("have.text", "Success");
+  }
+
+}
+export default new UserPage();
