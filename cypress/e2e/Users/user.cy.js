@@ -15,11 +15,7 @@ describe("CRUD Users", () => {
   it("Create User", () => {
     UserPage.clickAddBtn();
     UserPage.assertBtn();
-    UserPage.createUser(
-      user.userInfo.firstName,
-      user.userInfo.middleName,
-      user.userInfo.lastName
-    );
+    UserPage.createUser(user.userInfo.firstName,user.userInfo.middleName,user.userInfo.lastName);
   });
   it('Edit User', () => {
     UserPage.selectUser();
