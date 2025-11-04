@@ -1,15 +1,15 @@
 # E2E Test (Cypress)
 
-This project contains **End-to-End (E2E)** test cases written in **Cypress** to verify the full user flow through the browser. It is designed for QA and developers to validate core functionality before deployment and can be integrated with CI pipelines.
+This project contains **End-to-End (E2E)** test cases written in **Cypress** to verify the complete user journey through the browser. It follows a modular structure using the **Page Object Model (POM)** to keep tests clean, maintainable, and reusable.
 
 ---
 
 ## 🚀 Prerequisites
 
-Before running, ensure that you have:
+Before running, ensure you have:
 
 - [Node.js](https://nodejs.org/) (LTS version recommended)
-- npm (included with Node.js)
+- npm (comes with Node.js)
 
 Check versions:
 
@@ -22,35 +22,35 @@ npm -v
 
 ## 📦 Installation
 
-Install all dependencies:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-If the project is part of a larger frontend/backend repo, run this command inside the Cypress test folder that contains `package.json`.
+If the project is separate from the main frontend/backend, run this command inside the Cypress test folder that contains `package.json`.
 
 ---
 
 ## ▶️ Running Tests
 
 ### 1) Run with Cypress UI
-For debugging and visual inspection:
+For debugging or inspecting tests interactively:
 
 ```bash
 npx cypress open
 ```
 
-Then select **E2E Testing** and choose your preferred spec.
+Select **E2E Testing** and choose your preferred spec.
 
 ### 2) Run Headless (for CI or automation)
-For running in CI environments or fast local runs:
+For fast local or CI runs:
 
 ```bash
 npx cypress run
 ```
 
-Specify browser if needed:
+To specify browser:
 
 ```bash
 npx cypress run --browser chrome
@@ -60,30 +60,86 @@ npx cypress run --browser chrome
 
 ## 🏗 Project Structure
 
-Typical Cypress folder structure:
+Typical Cypress + POM structure:
 
 ```text
 cypress/
-  e2e/                 # Test files (.cy.js / .cy.ts)
+  e2e/                     # Test files (.cy.js / .cy.ts)
     login.cy.js
     exam/
       generate-exam.cy.js
-  fixtures/            # Static test data (JSON)
+
+  fixtures/                # Static test data (JSON)
     user.json
+
+  pageObjects/             # Page Object Model classes (selectors + actions)
+    LoginPage.js
+    DashboardPage.js
+    ExamPage.js
+
   support/
-    commands.js        # Custom commands (e.g., cy.login())
-    e2e.js             # Runs before every test
-cypress.config.js      # Cypress configuration (baseUrl, viewport, env)
+    commands.js            # Custom commands (e.g., cy.login())
+    e2e.js                 # Runs before every test
+
+cypress.config.js          # Cypress configuration (baseUrl, viewport, env)
 package.json
 ```
 
-> You can organize files in `cypress/e2e/` by feature/module (e.g., `auth/`, `dashboard/`, `cms/`) for better readability.
+> Each page class in `pageObjects/` represents a part of the app and contains reusable selectors and methods for interacting with UI elements.
+
+---
+
+## 🧩 Page Object Model (POM)
+
+The **Page Object Model** helps keep test code organized by separating UI logic from test logic.
+
+### Example: Login Page Object
+
+```js
+// cypress/pageObjects/LoginPage.js
+class LoginPage {
+  elements = {
+    username: () => cy.get('[data-cy="username"]'),
+    password: () => cy.get('[data-cy="password"]'),
+    loginBtn: () => cy.get('[data-cy="login-btn"]')
+  };
+
+  visit() {
+    cy.visit("/login");
+  }
+
+  login(username, password) {
+    this.elements.username().type(username);
+    this.elements.password().type(password);
+    this.elements.loginBtn().click();
+  }
+}
+
+module.exports = new LoginPage();
+```
+
+### Example: Using POM in a test
+
+```js
+// cypress/e2e/login.cy.js
+import LoginPage from "../pageObjects/LoginPage";
+
+describe("Login flow", () => {
+  it("should login with valid credentials", () => {
+    LoginPage.visit();
+    LoginPage.login(Cypress.env("username"), Cypress.env("password"));
+    cy.url().should("include", "/dashboard");
+  });
+});
+```
+
+This approach makes it easy to maintain tests even if the UI changes.
 
 ---
 
 ## ⚙️ Configuration (optional)
 
-If the project supports multiple environments (e.g., Dev, Staging), configure them in `cypress.config.js`:
+If your project uses multiple environments (e.g., Dev, Staging), define them in `cypress.config.js`:
 
 ```js
 const { defineConfig } = require("cypress");
@@ -96,13 +152,13 @@ module.exports = defineConfig({
       password: "P@ssw0rd",
     },
     setupNodeEvents(on, config) {
-      // ...
+      // Custom events
     },
   },
 });
 ```
 
-Usage example in test:
+Then use environment variables directly in tests or page objects:
 
 ```js
 cy.visit("/");
@@ -111,26 +167,9 @@ cy.get("#username").type(Cypress.env("username"));
 
 ---
 
-## 🧪 Example Test
-
-```js
-describe("Login flow", () => {
-  it("should login with valid credentials", () => {
-    cy.visit("/");
-    cy.get('[data-cy="username"]').type(Cypress.env("username"));
-    cy.get('[data-cy="password"]').type(Cypress.env("password"));
-    cy.get('[data-cy="login-btn"]').click();
-    cy.url().should("include", "/dashboard");
-  });
-});
-```
-
----
-
 ## 🛠 Continuous Integration (Basic Setup)
 
-You can integrate Cypress with GitHub Actions (or any CI system).  
-Here’s a minimal example of a GitHub Actions workflow:
+Example workflow for **GitHub Actions**:
 
 ```yaml
 name: Cypress E2E
@@ -161,19 +200,19 @@ jobs:
 ```
 
 **Explanation:**
-- `on:` defines when to run tests (on push or PR).
-- `checkout` fetches your code.
-- `setup-node` sets up Node.js.
+- `on:` specifies when to run (push or PR).
+- `checkout` fetches repository code.
+- `setup-node` prepares Node.js environment.
 - `npm install` installs dependencies.
-- `npx cypress run` executes the E2E tests.
+- `npx cypress run` executes all tests headlessly.
 
-For sensitive data (e.g., credentials), store them as **GitHub Secrets** and reference them in the workflow instead of hardcoding.
+Sensitive information (like credentials) should be stored in **GitHub Secrets** and referenced in CI configuration.
 
 ---
 
 ## 🧑‍💻 Recommended Scripts (package.json)
 
-To simplify commands, add this section to your `package.json`:
+Add useful npm scripts:
 
 ```json
 {
@@ -185,7 +224,7 @@ To simplify commands, add this section to your `package.json`:
 }
 ```
 
-Then you can run:
+Run them easily:
 
 ```bash
 npm run cy:open
@@ -197,8 +236,8 @@ npm run cy:run
 
 ## ✅ Summary
 
-- Use `npm install` to install dependencies.
-- Use `npx cypress open` to debug visually.
-- Use `npx cypress run` to run tests headlessly or in CI.
-- Cypress follows a clear folder structure under `cypress/`.
-- CI integration example provided for GitHub Actions.
+- Use `npm install` to install dependencies.  
+- Use `npx cypress open` for interactive testing.  
+- Use `npx cypress run` for headless or CI runs.  
+- Organized with **Page Object Model (POM)** under `cypress/pageObjects/`.  
+- Includes GitHub Actions workflow example for CI integration.
